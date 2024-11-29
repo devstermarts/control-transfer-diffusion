@@ -1,6 +1,6 @@
 import torch
 import lmdb
-from audio_example import AudioExample
+from audio_example import AudioExample #was: from acids_datasets import AudioExample
 from random import random
 from tqdm import tqdm
 import numpy as np
