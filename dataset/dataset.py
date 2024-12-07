@@ -1,31 +1,35 @@
 import torch
 import lmdb
-from audio_example import AudioExample #was: from acids_datasets import AudioExample
+from .audio_example import AudioExample
 from random import random
 from tqdm import tqdm
 import numpy as np
 
 
 class SimpleDataset(torch.utils.data.Dataset):
+    """
+    SimpleDataset is a pytorch dataset that reads from an lmdb database.
+    path: str -> path to the lmdb database
+    keys: list -> list of keys to retrieve from the lmdb dataset (midi, waveform)
+    """
+
     def __init__(
         self,
         path,
         keys=['waveform', 'metadata'],
-        readonly=True,
     ) -> None:
         super().__init__()
 
         self.env = lmdb.open(
             path,
             lock=False,
-            readonly=readonly,
+            readonly=False,
             readahead=False,
             map_async=False,
         )
         with self.env.begin() as txn:
             self.keys = list(txn.cursor().iternext(values=False))
         self.buffer_keys = keys
-
 
     def __len__(self):
         return len(self.keys)
@@ -51,13 +55,13 @@ from sklearn.model_selection import train_test_split
 
 
 class CombinedDataset(torch.utils.data.Dataset):
+    """ 
+    path_dict: dict -> dictionnary containing the path to the lmdb dataset and the frequency of each class (1.0 meaning that each dataset is sampled equally, whatever its size)
+    keys: list -> list of keys to retrieve from the lmdb dataset (midi, waveform)
+    config: str -> "train" or "val" or "all" to specify if the dataset is used for training, validation or to get all data
+    """
 
-    def __init__(self,
-                 path_dict,
-                 keys=["waveform"],
-                 sr=24000,
-                 transforms=[],
-                 config="all"):
+    def __init__(self, path_dict, keys=["waveform"], sr=24000, config="all"):
         super().__init__()
         self.config = config
 
@@ -93,8 +97,6 @@ class CombinedDataset(torch.utils.data.Dataset):
         self.weights_indexes = []
         self.all_keys = []
         self.all_indexes = []
-
-        self.transforms = transforms
 
         for i, k in enumerate(self.keys.keys()):
             self.dataset_ids = self.dataset_ids + [k] * len(self.keys[k])
